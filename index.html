@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Test Callback</title>
+</head>
+
+<body>
+    <label for="conversationId">Conversation Id:</label>
+    <input type="text" name="conversationId" id="conversationId">
+    <br>
+    <label for="participantId">Participant Id:</label>
+    <input type="text" name="participantId" id="participantId">
+    <br>
+    <label for="callbackNumber">Callback Number:</label>
+    <input type="text" name="callbackNumber" id="callbackNumber" value="+33680854089">
+    <br>
+    <button id="createCallback">Create Callback</button>
+
+    <script src="https://code.jquery.com/jquery-3.4.1.min.js"></script>
+    <script src="https://sdk-cdn.mypurecloud.com/javascript/64.0.0/purecloud-platform-client-v2.min.js"></script>
+    <script>
+
+        let clientId = "1db38a1e-2398-4435-91f6-d51493e17e23";
+        let redirectUri = "http://127.0.0.1:5500/index.html";
+        let state = "CONNECTED";
+
+        const platformClient = require('platformClient');
+        const client = platformClient.ApiClient.instance;
+
+        $.urlParam = function (name) {
+            var results = new RegExp('[\?&]' + name + '=([^&#]*)').exec(window.location.search);
+            return (results !== null) ? results[1] || 0 : false;
+        }
+
+        $("#conversationId").val($.urlParam('conversationId'));
+        $("#participantId").val($.urlParam('participantId'));
+
+        $("#createCallback").on("click", async (e) => {
+            e.preventDefault();
+            let conversationId = $("#conversationId").val();
+            console.log('Conversation Id:', conversationId);
+            let participantId = $("#participantId").val();
+            console.log('Participant Id:', participantId);
+
+            await loginImplicitGrant();
+            await createCallback(conversationId, participantId);
+        });
+
+        function loginImplicitGrant() {
+            return new Promise((resolve, reject) => {
+                client.setEnvironment("mypurecloud.ie");
+                client.loginImplicitGrant(clientId, redirectUri, { state: state })
+                    .then((data) => {
+                        console.log(data);
+                        resolve();
+                    })
+                    .catch((err) => {
+                        console.log(err);
+                        reject(err);
+                    });
+            })
+        }
+
+        function createCallback(conversationId, participantId) {
+            return new Promise((resolve, reject) => {
+                let apiInstance = new platformClient.ConversationsApi();
+                let opts = {
+                    "routingData": {
+                        "queueId": "c88937af-df4f-47cf-80e3-a6739afa65b5"
+                    },
+                    "callbackNumbers": [$("#callbackNumber").val()]
+                };
+                apiInstance.postConversationParticipantCallbacks(conversationId, participantId, opts)
+                    .then(() => {
+                        console.log('postConversationParticipantCallbacks returned successfully.');
+                    })
+                    .catch((err) => {
+                        console.log('There was a failure calling postConversationParticipantCallbacks');
+                        console.error(err);
+                    });
+            });
+        }
+
+    </script>
+</body>
+
+</html>
